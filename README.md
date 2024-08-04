@@ -24,4 +24,11 @@ Dynamic software developer with 1.5 years of experience at Nagarro, proficient i
 
 </div>
 
+<p><img align="left" src="https://github-readme-stats.vercel.app/api/top-langs?username=dev771&show_icons=true&locale=en&layout=compact&theme=vision-friendly-dark" alt="dev771" /></p>
+
+<p>&nbsp;<img align="center" src="https://github-readme-stats.vercel.app/api?username=dev771&show_icons=true&locale=en&theme=vision-friendly-dark" alt="dev771" /></p>
+
+<p><img align="center" src="https://github-readme-streak-stats.herokuapp.com/?user=dev771&theme=vision-friendly-dark" alt="dev771" /></p>
+
+
 ___
