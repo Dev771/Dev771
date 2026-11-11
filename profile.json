@@ -30,7 +30,49 @@
       "color": "mustard",
       "icon": "stack",
       "url": "https://github.com/Dev771?tab=repositories",
-      "text": "TypeScript and Java. NestJS, Next.js, React Native and Spring Boot, with Postgres and Redis on AWS."
+      "text": "TypeScript and Java. NestJS, Next.js, React Native and Spring Boot, with Postgres and Redis on AWS.",
+      "items": [
+        {
+          "name": "TypeScript",
+          "color": "#3178C6"
+        },
+        {
+          "name": "Java",
+          "color": "#B07219"
+        },
+        {
+          "name": "NestJS",
+          "color": "#E0234E"
+        },
+        {
+          "name": "Next.js",
+          "color": "#EDEBFF"
+        },
+        {
+          "name": "React Native",
+          "color": "#61DAFB"
+        },
+        {
+          "name": "Spring Boot",
+          "color": "#6DB33F"
+        },
+        {
+          "name": "Postgres",
+          "color": "#5A8FD8"
+        },
+        {
+          "name": "Redis",
+          "color": "#DC382D"
+        },
+        {
+          "name": "AWS",
+          "color": "#FF9900"
+        },
+        {
+          "name": "Kubernetes",
+          "color": "#326CE5"
+        }
+      ]
     }
   ],
   "repos": [
