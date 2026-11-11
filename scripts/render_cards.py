@@ -61,9 +61,11 @@ GAP = 12           # space between cards, drawn into each SVG
 THIRD = W / 3
 
 FACES = {
-    "px": ("Pixelify Sans", 400, "pixel-400.woff2"),
-    "px-med": ("Pixelify Sans", 500, "pixel-500.woff2"),
-    "px-semi": ("Pixelify Sans", 600, "pixel-600.woff2"),
+    # Tiny5 for running text and labels: Pixelify's small B, C and 5 read as G, O and S.
+    "px": ("Tiny5", 400, "tiny5-400.woff2"),
+    "px-med": ("Tiny5", 400, "tiny5-400.woff2"),
+    "px-semi": ("Tiny5", 400, "tiny5-400.woff2"),
+    # Pixelify Bold only for big display lines, where its letters are large enough to read.
     "px-bold": ("Pixelify Sans", 700, "pixel-700.woff2"),
     # Pixelify's 5 looks like an S, so big numbers use Jersey 10 (scoreboard style).
     "num": ("Jersey 10", 400, "jersey10-400.woff2"),
@@ -165,10 +167,11 @@ class Card:
         return inner
 
     def svg(self):
+        unique = {(F[k].family, F[k].weight): F[k] for k in self.faces}
         fonts = "".join(
-            f"@font-face{{font-family:'{F[k].family}';font-style:normal;font-weight:{F[k].weight};"
-            f"src:url(data:font/woff2;base64,{F[k].b64}) format('woff2')}}"
-            for k in self.faces
+            f"@font-face{{font-family:'{f.family}';font-style:normal;font-weight:{f.weight};"
+            f"src:url(data:font/woff2;base64,{f.b64}) format('woff2')}}"
+            for f in unique.values()
         )
         css = fonts + BASE_CSS + "".join(self.css) + (STATIC_CSS if STATIC else "")
         defs = f"<defs>{''.join(self.defs)}</defs>" if self.defs else ""
@@ -364,9 +367,9 @@ def hero():
     card.text(x + 5, 160 + 5, p["name"], "px-bold", size, VIOLET)
     card.text(x, 160, p["name"], "px-bold", size, TEXT)
 
-    tag = wrap(p["tagline"], "px", 17, 440)
+    tag = wrap(p["tagline"], "px", 18, 440)
     for i, line in enumerate(tag):
-        card.text(x, 210 + i * 27, line, "px", 17, TEXT_SOFT)
+        card.text(x, 210 + i * 27, line, "px", 18, TEXT_SOFT)
 
     y = 210 + len(tag) * 27 + 22
     arrow = ["#...", "##..", "###.", "##..", "#..."]
@@ -404,7 +407,7 @@ def skyline():
     card.text(28, 46, "A year of commits, one building per week", "px-semi", 20, TEXT)
     card.add(f'<rect x="29" y="61" width="7" height="6" fill="{WINDOW_ON[3]}"/>')
     card.text(44, 68, "lit window = a day with contributions", "px", 14, MUTED)
-    card.text(W - 28, 46, f"Updated {fmt_date(LAST)}", "px", 14, MUTED, anchor="end")
+    card.text(W - 28, 46, f"Updated {fmt_date(LAST)}", "num", 19, MUTED, anchor="end")
 
     x0, span = 26, W - 52
     pitch = span / len(wk)
@@ -498,7 +501,7 @@ def stats():
         x = 24 + i * cw + 12
         card.add(pixels(ICONS[icon], x, 30, 3, color))
         card.text(x + 44, 60, big, "num", 44, TEXT)
-        card.text(x, 92, label, "px", 14, MUTED)
+        card.text(x, 93, label, "num", 19, MUTED)
         if i:
             dots = "".join(f'<rect x="{24 + i * cw - 6:.1f}" y="{y}" width="2" height="2"/>' for y in range(26, h - 22, 6))
             card.add(f'<g fill="{EDGE}">{dots}</g>')
@@ -526,7 +529,7 @@ def now_layout():
     entries = [tile("work"), tile("ship")]
     out, y = [], 30
     for t in entries:
-        lines = wrap(t["text"], "px", 16, HALF - 70 - 28)
+        lines = wrap(t["text"], "px", 17, HALF - 70 - 28)
         out.append((t, y, lines))
         y += 50 + len(lines) * 23 + 22
     return out, y - 22 + 26
@@ -559,7 +562,7 @@ def now_panel():
         card.add(pixels(ICONS[t["icon"]], 26, y, 3, color))
         card.text(70, y + 22, t["label"], "px-semi", 20, color)
         for k, line in enumerate(lines):
-            card.text(70, y + 50 + k * 23, line, "px", 16, TEXT_SOFT)
+            card.text(70, y + 50 + k * 23, line, "px", 17, TEXT_SOFT)
     save("now.svg", card)
 
 
@@ -635,6 +638,74 @@ def link_button(link, i):
     save(f"link-{i}.svg", card)
 
 
+# ------------------------------------------------------------ timeline ------
+
+CAP = [
+    "..........", "....##....", "..######..", "##########", "..######.#",
+    "..#....#.#", "..######.#", ".........#", "..........", "..........",
+]
+DOWN = ["#######", ".#####.", "..###..", "...#..."]
+
+
+def timeline_alt():
+    return "My timeline. " + " ".join(f'{s["when"]}: {s["title"]}, {s["detail"]}.' for s in PROFILE["timeline"])
+
+
+def timeline():
+    """A level map: each stage of school and work is a node on a winding dotted path."""
+    stages = PROFILE["timeline"]
+    n = len(stages)
+    h = 244
+    card = Card(W, h, timeline_alt())
+    card.frame()
+    card.text(28, 46, "The road so far", "px-semi", 20, TEXT)
+
+    xs = [96 + i * (W - 192) / (n - 1) for i in range(n)]
+    ys = [128 if i % 2 == 0 else 104 for i in range(n)]
+
+    # dotted path, drawn left to right like walking the map
+    dots, t, reach = [], 0.2, [0.15]
+    for i in range(n - 1):
+        mid = (xs[i] + xs[i + 1]) / 2
+        legs = [((xs[i], ys[i]), (mid, ys[i])), ((mid, ys[i]), (mid, ys[i + 1])), ((mid, ys[i + 1]), (xs[i + 1], ys[i + 1]))]
+        color = VIOLET if i == n - 2 else LAVENDER
+        for (x0, y0), (x1, y1) in legs:
+            length = abs(x1 - x0) + abs(y1 - y0)
+            for k in range(0, int(length), 8):
+                f = k / length if length else 0
+                x, y = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
+                if min(abs(x - xs[i]) + abs(y - ys[i]), abs(x - xs[i + 1]) + abs(y - ys[i + 1])) < 24:
+                    continue
+                dots.append(f'<rect class="in" style="animation-delay:{t:.2f}s" x="{x - 2:.1f}" y="{y - 2:.1f}" width="4" height="4" fill="{color}"/>')
+                t += 0.012
+        reach.append(t)
+    card.add("".join(dots))
+
+    for i, (s, x, y) in enumerate(zip(stages, xs, ys)):
+        current = s.get("current", False)
+        icon = CAP if s["kind"] == "school" else ICONS["briefcase"]
+        body, ink = (VIOLET, TEXT) if current else (INSET, MUSTARD if s["kind"] == "school" else GREEN)
+        node = (
+            f'<path d="{notched(x - 18, y - 18, 36, 36, 4)}" fill="{EDGE}"/>'
+            f'<path d="{notched(x - 15, y - 15, 30, 30, 3)}" fill="{body}"/>'
+            + pixels(icon, x - 10, y - 10, 2, ink)
+        )
+        card.add(f'<g class="in" style="animation-delay:{reach[i]:.2f}s">{node}</g>')
+        if current:
+            card.add(pixels(DOWN, x - 10.5, y - 40, 3, MUSTARD, ' class="cur"'))
+
+        card.text(x, 174, s["when"], "num", 18, MUTED, anchor="middle")
+        size = 17
+        while F["px-semi"].width(s["title"], size) > 160 and size > 12:
+            size -= 0.5
+        card.text(x, 196, s["title"], "px-semi", size, LAVENDER if current else TEXT, anchor="middle")
+        size = 13
+        while F["px"].width(s["detail"], size) > 160 and size > 10:
+            size -= 0.5
+        card.text(x, 216, s["detail"], "px", size, TEXT_SOFT, anchor="middle")
+    save("timeline.svg", card)
+
+
 # --------------------------------------------------------------- repos ------
 
 def title(text, slug):
@@ -684,8 +755,8 @@ def repo_card(r, i):
     while F["px-semi"].width(r["name"], size) > lw - 24 and size > 12:
         size -= 0.5
     card.text(lx + 12, ly + 25, r["name"], "px-semi", size, PANEL)
-    for k, line in enumerate(wrap(r["description"], "px", 14, lw - 24)[:5]):
-        card.text(lx + 12, ly + 62 + k * 20, line, "px", 14, TEXT_SOFT)
+    for k, line in enumerate(wrap(r["description"], "px", 15, lw - 24)[:5]):
+        card.text(lx + 12, ly + 62 + k * 20, line, "px", 15, TEXT_SOFT)
 
     ridges = "".join(f'<rect x="{18 + k * 7}" y="{h - 34}" width="3" height="20"/>' for k in range(7))
     card.add(f'<g fill="{CART_DARK}">{ridges}</g>')
@@ -723,6 +794,7 @@ def readme():
 <img src="{src("skyline")}" width="100%" alt="Contributions over the last year drawn as a city: one building per week, one lit window per day with contributions" /><br>
 <img src="{src("stats")}" width="100%" alt="{a(f"{CONTRIB['total']:,} contributions in the last year. Current streak {current} days, longest {longest}.")}" /><br>
 <a href="{a(work["url"])}"><img src="{src("now")}" width="50%" alt="{a(work["label"] + ": " + work["text"] + " " + ship["label"] + ": " + ship["text"])}" /></a><a href="{a(stack["url"])}"><img src="{src("stack")}" width="50%" alt="{a(stack_alt())}" /></a><br>
+<img src="{src("timeline")}" width="100%" alt="{a(timeline_alt())}" /><br>
 <img src="{src("title-built")}" width="100%" alt="Things I've built" /><br>
 {repos}<br>
 {links}
@@ -740,6 +812,7 @@ def main():
     stats()
     now_panel()
     stack_panel()
+    timeline()
     title("Things I've built", "built")
     for i, r in enumerate(PROFILE["repos"]):
         repo_card(r, i)

@@ -92,5 +92,38 @@
       "icon": "briefcase",
       "url": "https://zime.ai"
     }
+  ],
+  "timeline": [
+    {
+      "kind": "school",
+      "title": "BCA",
+      "detail": "Bharati Vidyapeeth",
+      "when": "2018–2021"
+    },
+    {
+      "kind": "school",
+      "title": "MCA",
+      "detail": "Bharati Vidyapeeth",
+      "when": "2021–2023"
+    },
+    {
+      "kind": "job",
+      "title": "Nagarro",
+      "detail": "Java full-stack developer",
+      "when": "Mar 2023–Oct 2024"
+    },
+    {
+      "kind": "job",
+      "title": "Goodspace AI",
+      "detail": "Full-stack developer",
+      "when": "Oct 2024–Mar 2025"
+    },
+    {
+      "kind": "job",
+      "title": "Zime",
+      "detail": "Software engineer",
+      "when": "Since Mar 2025",
+      "current": true
+    }
   ]
 }
