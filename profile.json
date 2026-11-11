@@ -1,0 +1,61 @@
+{
+  "login": "Dev771",
+  "name": "Dev Garg",
+  "role": "Software Engineer at Zime",
+  "tagline": "I work on sign-in, infrastructure and AI features at Zime, a sales intelligence platform, and build small full-stack apps on the side.",
+  "website": {
+    "label": "dev-portfolio-ten-azure.vercel.app",
+    "url": "https://dev-portfolio-ten-azure.vercel.app"
+  },
+  "tiles": [
+    {
+      "id": "work",
+      "label": "Work",
+      "color": "violet",
+      "icon": "briefcase",
+      "url": "https://zime.ai",
+      "text": "Sign-in and SSO, our Kubernetes setup on AWS, and Ask Zime, which answers questions about sales calls."
+    },
+    {
+      "id": "ship",
+      "label": "Ship",
+      "color": "green",
+      "icon": "rocket",
+      "url": "https://dev-portfolio-ten-azure.vercel.app",
+      "text": "Apps I've put live: Kharcha for splitting expenses, a real-time project board, and my portfolio."
+    },
+    {
+      "id": "stack",
+      "label": "Stack",
+      "color": "mustard",
+      "icon": "stack",
+      "url": "https://github.com/Dev771?tab=repositories",
+      "text": "TypeScript and Java. NestJS, Next.js, React Native and Spring Boot, with Postgres and Redis on AWS."
+    }
+  ],
+  "repos": [
+    {
+      "name": "Kharcha",
+      "description": "Split expenses with friends or flatmates: group ledgers, live balances, settle-ups and exports. NestJS, Prisma and Redis."
+    },
+    {
+      "name": "Project-Management-Dashboard",
+      "description": "A shared project board with roles for admins, managers and members. Tasks and comments update live over Socket.IO."
+    },
+    {
+      "name": "Account-Managment-API",
+      "language": "Java",
+      "description": "Account and user services split into Spring Boot microservices, with Eureka discovery, a JWT gateway, RabbitMQ and Docker Compose."
+    }
+  ],
+  "links": [
+    {
+      "label": "portfolio",
+      "url": "https://dev-portfolio-ten-azure.vercel.app"
+    },
+    {
+      "label": "zime.ai",
+      "url": "https://zime.ai"
+    }
+  ]
+}
