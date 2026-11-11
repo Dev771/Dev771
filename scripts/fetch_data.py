@@ -55,6 +55,12 @@ def main():
     query = f"""
     query($login: String!) {{
       user(login: $login) {{
+        repositories(first: 100, ownerAffiliations: OWNER, isFork: false, privacy: PUBLIC) {{
+          nodes {{
+            name
+            languages(first: 20, orderBy: {{field: SIZE, direction: DESC}}) {{ edges {{ size node {{ name color }} }} }}
+          }}
+        }}
         contributionsCollection {{
           contributionCalendar {{
             totalContributions
@@ -94,7 +100,20 @@ def main():
             "languages": node["languages"]["nodes"],
         }
     (DATA / "repos.json").write_text(json.dumps(repos, indent=1), encoding="utf-8")
-    print(f"{len(days)} days, {cal['totalContributions']} contributions, {len(repos)} repos")
+
+    # Bytes of code per language across public repos I own (forks and this profile repo left out).
+    langs = {}
+    for repo in data["user"]["repositories"]["nodes"]:
+        if repo["name"].lower() == login.lower():
+            continue
+        for edge in repo["languages"]["edges"]:
+            name = edge["node"]["name"]
+            entry = langs.setdefault(name, {"bytes": 0, "repos": 0, "color": edge["node"]["color"]})
+            entry["bytes"] += edge["size"]
+            entry["repos"] += 1
+    langs = dict(sorted(langs.items(), key=lambda kv: -kv[1]["bytes"]))
+    (DATA / "languages.json").write_text(json.dumps(langs, indent=1), encoding="utf-8")
+    print(f"{len(days)} days, {cal['totalContributions']} contributions, {len(repos)} repos, {len(langs)} languages")
 
 
 if __name__ == "__main__":

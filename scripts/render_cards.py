@@ -14,6 +14,7 @@ each row of cards on one line.
 """
 import base64
 import datetime as dt
+import hashlib
 import json
 import os
 import random
@@ -29,6 +30,7 @@ CARDS = ROOT / "cards"
 PROFILE = json.loads((ROOT / "profile.json").read_text(encoding="utf-8"))
 CONTRIB = json.loads((ROOT / "data" / "contributions.json").read_text(encoding="utf-8"))
 REPOS = json.loads((ROOT / "data" / "repos.json").read_text(encoding="utf-8"))
+LANGS = json.loads((ROOT / "data" / "languages.json").read_text(encoding="utf-8"))
 STATIC = bool(os.environ.get("STATIC"))
 
 # Night palette. Accents come from the avatar: laptop violet, cap-logo green, shirt mustard.
@@ -45,8 +47,10 @@ GREEN = "#3DDC84"
 MUSTARD = "#F2B83B"
 ORANGE = "#FF8A4C"
 RED = "#FF5A5F"
-BUILDINGS = ["#1F1B45", "#25204F", "#2B2559"]
-WINDOW_OFF = "#15122F"
+NIGHT = ["#0B0A1C", "#0E0C24", "#110F2B", "#151233", "#1A163E", "#251D55"]  # down to a violet horizon glow
+FAR = "#100E27"
+BUILDINGS = ["#231E4C", "#28225A", "#2E2763"]
+WINDOW_OFF = "#17143A"
 WINDOW_ON = [None, "#7A5E22", "#B8892E", "#F2B83B", "#FFE08A"]
 CART = "#272250"
 CART_DARK = "#1B1839"
@@ -187,13 +191,21 @@ def third(i):
     return w, left, THIRD - w - left
 
 
+NAMES = {}
+
+
 def save(name, card):
-    (CARDS / name).write_text(card.svg(), encoding="utf-8")
+    """Write a card under a content-hashed name. GitHub's raw CDN caches each URL for a few
+    minutes and drops query strings, so a new name is the only way changes show up at once."""
+    svg = card.svg()
+    stem = name.removesuffix(".svg")
+    NAMES[stem] = f"{stem}-{hashlib.sha1(svg.encode()).hexdigest()[:8]}.svg"
+    (CARDS / NAMES[stem]).write_text(svg, encoding="utf-8")
 
 
-def sky(card, clip, colors):
+def sky(card, clip, colors, height=None):
     """Banded night sky, dithered where bands meet, clipped to the card body."""
-    w, h = card.w, card.h
+    w, h = card.w, height or card.h
     card.defs.append(f'<clipPath id="body"><path d="{clip}"/></clipPath>')
     band = 2 * round(h / len(colors) / 2)
     parts = []
@@ -210,12 +222,12 @@ def sky(card, clip, colors):
     card.add(f'<g clip-path="url(#body)">{"".join(parts)}</g>')
 
 
-def stars(card, n, seed, avoid):
+def stars(card, n, seed, avoid, bottom=None):
     rng = random.Random(seed)
     placed, tries = [], 0
     while len(placed) < n and tries < 4000:
         tries += 1
-        x, y = rng.randrange(14, int(card.w) - 14, 2), rng.randrange(12, int(card.h) - 12, 2)
+        x, y = rng.randrange(14, int(card.w) - 14, 2), rng.randrange(12, int(bottom or card.h) - 12, 2)
         if any(x0 <= x <= x1 and y0 <= y <= y1 for x0, y0, x1, y1 in avoid):
             continue
         if any(abs(x - px) < 18 and abs(y - py) < 18 for px, py in placed):
@@ -371,28 +383,36 @@ def skyline():
     totals = [sum(c for *_, c in w) for w in wk]
     peak = max(range(len(wk)), key=lambda i: totals[i])
     h = 300
+    ground = h - 42
     card = Card(
         W, h,
         f"Contributions over the last year drawn as a city: one building per week, taller for busier weeks, "
         f"and one lit window for each day with contributions. Busiest week: {totals[peak]} contributions.",
     )
     body = card.frame()
-    sky(card, body, SKY[2:])
-    stars(card, 16, 5, avoid=[(0, 0, 560, 90), (620, 0, W, 66), (0, 96, W, h)])
+    sky(card, body, NIGHT, height=ground)
+    stars(card, 46, 5, avoid=[(0, 0, 580, 80), (620, 0, W, 60)], bottom=ground - 24)
+
+    # a far-off row of dark towers without windows, for depth
+    rng, far, fx = random.Random(3), [], 4
+    while fx < W:
+        fw, fh = rng.randrange(14, 34, 2), rng.randrange(20, 92, 2)
+        far.append(f'<rect x="{fx}" y="{ground - fh}" width="{fw}" height="{fh}"/>')
+        fx += fw + rng.choice([0, 0, 2, 6])
+    card.add(f'<g clip-path="url(#body)" fill="{FAR}">{"".join(far)}</g>')
 
     card.text(28, 46, "A year of commits, one building per week", "px-semi", 20, TEXT)
     card.add(f'<rect x="29" y="61" width="7" height="6" fill="{WINDOW_ON[3]}"/>')
     card.text(44, 68, "lit window = a day with contributions", "px", 14, MUTED)
     card.text(W - 28, 46, f"Updated {fmt_date(LAST)}", "px", 14, MUTED, anchor="end")
 
-    ground = h - 42
     x0, span = 26, W - 52
     pitch = span / len(wk)
     bw = 12
     peak_total = totals[peak] or 1
     buildings, lights = [], []
     for i, days in enumerate(wk):
-        bh = 58 + 2 * round(totals[i] / peak_total * 58)
+        bh = 58 + 2 * round(totals[i] / peak_total * 62)
         bx = x0 + i * pitch + (pitch - bw) / 2
         by = ground - bh
         buildings.append(f'<rect x="{bx:.1f}" y="{by}" width="{bw}" height="{bh}" fill="{BUILDINGS[(i * 2 + i // 3) % 3]}"/>')
@@ -491,44 +511,128 @@ def tile(tid):
     return next(t for t in PROFILE["tiles"] if t["id"] == tid)
 
 
-def now_panel():
-    w = 2 * THIRD - GAP / 2
-    h = 236
+HALF = W / 2 - GAP / 2   # card width in the half-and-half row
+
+
+def language_shares():
+    """Top languages by bytes of code across my public repos, from data/languages.json."""
+    cfg = tile("stack")["languages"]
+    langs = [(n, v) for n, v in LANGS.items() if n not in set(cfg["exclude"])]
+    total = sum(v["bytes"] for _, v in langs) or 1
+    return [(n, v["color"] or MUTED, v["bytes"] / total, v["repos"]) for n, v in langs[: cfg["top"]]]
+
+
+def now_layout():
     entries = [tile("work"), tile("ship")]
-    card = Card(w, h, " ".join(f'{t["label"]}: {t["text"]}' for t in entries), right=GAP / 2)
-    card.frame()
-    y = 28
+    out, y = [], 30
     for t in entries:
+        lines = wrap(t["text"], "px", 16, HALF - 70 - 28)
+        out.append((t, y, lines))
+        y += 50 + len(lines) * 23 + 22
+    return out, y - 22 + 26
+
+
+def stack_layout():
+    t = tile("stack")
+    rows, y = [], 0
+    x, y = 24, 0
+    for name in t["tools"]:
+        cw = F["px"].width(name, 13) + 20
+        if x + cw > HALF - 24:
+            x, y = 24, y + 28
+        rows.append((name, x, y, cw))
+        x += cw + 6
+    tools_top = 92 + (len(language_shares()) - 1) * 40 + 50
+    return rows, tools_top, tools_top + 12 + y + 22 + 24
+
+
+def row_height():
+    return max(now_layout()[1], stack_layout()[2])
+
+
+def now_panel():
+    entries, _ = now_layout()
+    card = Card(HALF, row_height(), " ".join(f'{t["label"]}: {t["text"]}' for t, _, _ in entries), right=GAP / 2)
+    card.frame()
+    for t, y, lines in entries:
         color = ACCENTS[t["color"]]
         card.add(pixels(ICONS[t["icon"]], 26, y, 3, color))
         card.text(70, y + 22, t["label"], "px-semi", 20, color)
-        lines = wrap(t["text"], "px", 16, w - 70 - 30)
         for k, line in enumerate(lines):
             card.text(70, y + 50 + k * 23, line, "px", 16, TEXT_SOFT)
-        y += 50 + len(lines) * 23 + 18
     save("now.svg", card)
+
+
+def stack_alt():
+    langs = ", ".join(f"{n} {share * 100:.0f}%" for n, _, share, _ in language_shares())
+    return f"Stack. Code in my public repos: {langs}. Tools: {', '.join(tile('stack')['tools'])}."
 
 
 def stack_panel():
     t = tile("stack")
-    w = THIRD - GAP / 2
-    h = 236
-    color = ACCENTS[t["color"]]
-    card = Card(w, h, f'{t["label"]}: {t["text"]}', left=GAP / 2)
+    w = HALF
+    chips, tools_top, _ = stack_layout()
+    card = Card(w, row_height(), stack_alt(), left=GAP / 2)
     card.frame()
-    card.add(pixels(ICONS[t["icon"]], 24, 28, 3, color))
-    card.text(68, 50, t["label"], "px-semi", 20, color)
-    sw, sh, gap = (w - 48 - 8) / 2, 26, 6
-    for k, item in enumerate(t["items"][:10]):
-        sx = 24 + (k % 2) * (sw + 8)
-        sy = 74 + (k // 2) * (sh + gap)
-        card.add(f'<path d="{notched(sx, sy, sw, sh, 2)}" fill="{INSET}"/>')
-        card.add(f'<rect x="{sx + 8:.1f}" y="{sy + 9}" width="8" height="8" fill="{item["color"]}"/>')
-        size = 13
-        while F["px"].width(item["name"], size) > sw - 30 and size > 10:
-            size -= 0.5
-        card.text(sx + 22, sy + 17.5, item["name"], "px", size, TEXT)
+    color = ACCENTS[t["color"]]
+    card.add(pixels(ICONS[t["icon"]], 24, 30, 3, color))
+    card.text(68, 52, t["label"], "px-semi", 20, color)
+    card.text(w - 24, 52, "code in my public repos", "px", 13, MUTED, anchor="end")
+
+    segments = 20
+    seg_w = (w - 48 - (segments - 1) * 2) / segments
+    for k, (name, lcolor, share, repos) in enumerate(language_shares()):
+        y = 92 + k * 40
+        card.add(f'<rect x="24" y="{y - 9}" width="8" height="8" fill="{lcolor}"/>')
+        card.text(38, y, name, "px-med", 15, TEXT)
+        pct = "<1%" if share < 0.01 else f"{share * 100:.0f}%"
+        card.text(w - 24, y + 2, pct, "num", 24, TEXT, anchor="end")
+        note = f"{repos} repo" + ("" if repos == 1 else "s")
+        card.text(w - 24 - F["num"].width(pct, 24) - 10, y, note, "px", 12, MUTED, anchor="end")
+        filled = max(1, round(share * segments))
+        bar = "".join(
+            f'<rect x="{24 + s * (seg_w + 2):.1f}" y="{y + 8}" width="{seg_w:.1f}" height="6" fill="{lcolor if s < filled else INSET}"/>'
+            for s in range(segments)
+        )
+        card.add(f'<g class="in" style="animation-delay:{0.2 + k * 0.15:.2f}s">{bar}</g>')
+
+    card.text(24, tools_top, "Tools", "px-med", 14, MUTED)
+    for name, x, y, cw in chips:
+        top = tools_top + 12 + y
+        card.add(f'<path d="{notched(x, top, cw, 22, 2)}" fill="{INSET}"/>')
+        card.text(x + 10, top + 15.5, name, "px", 13, TEXT)
     save("stack.svg", card)
+
+
+# -------------------------------------------------------------- footer ------
+
+LINK_ICONS = {
+    "globe": [
+        "...####...", ".##.##.##.", ".#..##..#.", "##########", "#...##...#",
+        "#...##...#", "##########", ".#..##..#.", ".##.##.##.", "...####...",
+    ],
+    "card": [
+        "..........", "##########", "#........#", "#.##.....#", "#.##.###.#",
+        "#........#", "#.##.###.#", "#........#", "##########", "..........",
+    ],
+}
+
+
+def link_button(link, i):
+    w, left, right = third(i)
+    h = 64
+    card = Card(w, h, f'{link["label"]}: {link["detail"]}', left=left, right=right, bottom=0)
+    card.frame()
+    icon = LINK_ICONS.get(link["icon"]) or ICONS[link["icon"]]
+    card.add(pixels(icon, 18, 17, 3, LAVENDER))
+    card.text(60, 30, link["label"], "px-semi", 17, TEXT)
+    size = 12
+    while F["px"].width(link["detail"], size) > w - 60 - 40 and size > 9:
+        size -= 0.5
+    card.text(60, 48, link["detail"], "px", size, MUTED)
+    arrow = ["#...", "##..", "###.", "##..", "#..."]
+    card.add(pixels(arrow, w - 28, 22, 2, MUSTARD))
+    save(f"link-{i}.svg", card)
 
 
 # --------------------------------------------------------------- repos ------
@@ -600,27 +704,29 @@ def readme():
     p = PROFILE
     a = lambda s: escape(s, quote=True)
     current, longest = streaks()
+    src = lambda stem: f"./cards/{NAMES[stem]}"
     work, ship, stack = tile("work"), tile("ship"), tile("stack")
     repos = "".join(
-        f'<a href="{a(REPOS[r["name"]]["url"])}"><img src="./cards/repo-{r["name"].lower()}.svg" width="33.333%" alt="{a(r["name"] + ": " + r["description"])}" /></a>'
+        f'<a href="{a(REPOS[r["name"]]["url"])}"><img src="{src("repo-" + r["name"].lower())}" width="33.333%" alt="{a(r["name"] + ": " + r["description"])}" /></a>'
         for r in p["repos"]
     )
-    links = " &nbsp;/&nbsp; ".join(f'<a href="{a(l["url"])}">{escape(l["label"])}</a>' for l in p["links"])
+    links = "".join(
+        f'<a href="{a(l["url"])}"><img src="{src(f"link-{i}")}" width="33.333%" alt="{a(l["label"] + ": " + l["detail"])}" /></a>'
+        for i, l in enumerate(p["links"][:3])
+    )
     text = f"""<!-- Generated by scripts/render_cards.py. Edit profile.json, not this file.
      The cards are animated SVGs, refreshed every day by .github/workflows/refresh-cards.yml.
+     File names carry a content hash so GitHub's image cache never shows an old card.
      Keep this block free of blank lines and each row of cards on one line: the gaps are inside the SVGs. -->
 <div align="center">
-<a href="{a(p["website"]["url"])}"><img src="./cards/hero.svg" width="100%" alt="{a(p["name"] + ". " + p["role"] + ". " + p["tagline"])}" /></a><br>
-<img src="./cards/skyline.svg" width="100%" alt="Contributions over the last year drawn as a city: one building per week, one lit window per day with contributions" /><br>
-<img src="./cards/stats.svg" width="100%" alt="{a(f"{CONTRIB['total']:,} contributions in the last year. Current streak {current} days, longest {longest}.")}" /><br>
-<a href="{a(work["url"])}"><img src="./cards/now.svg" width="66.666%" alt="{a(work["label"] + ": " + work["text"] + " " + ship["label"] + ": " + ship["text"])}" /></a><a href="{a(stack["url"])}"><img src="./cards/stack.svg" width="33.333%" alt="{a(stack["label"] + ": " + stack["text"])}" /></a><br>
-<img src="./cards/title-built.svg" width="100%" alt="Things I've built" /><br>
-{repos}
-</div>
-
-<p align="center">
+<a href="{a(p["website"]["url"])}"><img src="{src("hero")}" width="100%" alt="{a(p["name"] + ". " + p["role"] + ". " + p["tagline"])}" /></a><br>
+<img src="{src("skyline")}" width="100%" alt="Contributions over the last year drawn as a city: one building per week, one lit window per day with contributions" /><br>
+<img src="{src("stats")}" width="100%" alt="{a(f"{CONTRIB['total']:,} contributions in the last year. Current streak {current} days, longest {longest}.")}" /><br>
+<a href="{a(work["url"])}"><img src="{src("now")}" width="50%" alt="{a(work["label"] + ": " + work["text"] + " " + ship["label"] + ": " + ship["text"])}" /></a><a href="{a(stack["url"])}"><img src="{src("stack")}" width="50%" alt="{a(stack_alt())}" /></a><br>
+<img src="{src("title-built")}" width="100%" alt="Things I've built" /><br>
+{repos}<br>
 {links}
-</p>
+</div>
 """
     (ROOT / "README.md").write_text(text, encoding="utf-8")
 
@@ -637,6 +743,8 @@ def main():
     title("Things I've built", "built")
     for i, r in enumerate(PROFILE["repos"]):
         repo_card(r, i)
+    for i, link in enumerate(PROFILE["links"][:3]):
+        link_button(link, i)
     readme()
     sizes = sorted((f.stat().st_size // 1024, f.name) for f in CARDS.glob("*.svg"))
     print("  ".join(f"{n} {kb}KB" for kb, n in sizes))

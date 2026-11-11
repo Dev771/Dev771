@@ -31,48 +31,31 @@
       "icon": "stack",
       "url": "https://github.com/Dev771?tab=repositories",
       "text": "TypeScript and Java. NestJS, Next.js, React Native and Spring Boot, with Postgres and Redis on AWS.",
-      "items": [
-        {
-          "name": "TypeScript",
-          "color": "#3178C6"
-        },
-        {
-          "name": "Java",
-          "color": "#B07219"
-        },
-        {
-          "name": "NestJS",
-          "color": "#E0234E"
-        },
-        {
-          "name": "Next.js",
-          "color": "#EDEBFF"
-        },
-        {
-          "name": "React Native",
-          "color": "#61DAFB"
-        },
-        {
-          "name": "Spring Boot",
-          "color": "#6DB33F"
-        },
-        {
-          "name": "Postgres",
-          "color": "#5A8FD8"
-        },
-        {
-          "name": "Redis",
-          "color": "#DC382D"
-        },
-        {
-          "name": "AWS",
-          "color": "#FF9900"
-        },
-        {
-          "name": "Kubernetes",
-          "color": "#326CE5"
-        }
-      ]
+      "tools": [
+        "NestJS",
+        "Next.js",
+        "React Native",
+        "Spring Boot",
+        "Postgres",
+        "Redis",
+        "AWS",
+        "Kubernetes"
+      ],
+      "languages": {
+        "top": 3,
+        "exclude": [
+          "CSS",
+          "HTML",
+          "SCSS",
+          "Less",
+          "EJS",
+          "Dockerfile",
+          "Shell",
+          "Batchfile",
+          "Makefile",
+          "Procfile"
+        ]
+      }
     }
   ],
   "repos": [
@@ -92,15 +75,21 @@
   ],
   "links": [
     {
-      "label": "portfolio",
+      "label": "Portfolio",
+      "detail": "Projects I've shipped",
+      "icon": "globe",
       "url": "https://dev-portfolio-ten-azure.vercel.app"
     },
     {
-      "label": "linkedin",
+      "label": "LinkedIn",
+      "detail": "linkedin.com/in/dev-garg771",
+      "icon": "card",
       "url": "https://www.linkedin.com/in/dev-garg771/"
     },
     {
-      "label": "zime.ai",
+      "label": "Zime",
+      "detail": "zime.ai",
+      "icon": "briefcase",
       "url": "https://zime.ai"
     }
   ]
