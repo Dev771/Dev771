@@ -11,5 +11,5 @@
 </div>
 
 <p align="center">
-<a href="https://dev-portfolio-ten-azure.vercel.app">portfolio</a> &nbsp;/&nbsp; <a href="https://zime.ai">zime.ai</a>
+<a href="https://dev-portfolio-ten-azure.vercel.app">portfolio</a> &nbsp;/&nbsp; <a href="https://www.linkedin.com/in/dev-garg771/">linkedin</a> &nbsp;/&nbsp; <a href="https://zime.ai">zime.ai</a>
 </p>
