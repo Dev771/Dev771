@@ -4,8 +4,8 @@
      Keep this block free of blank lines and each row of cards on one line: the gaps are inside the SVGs. -->
 <div align="center">
 <a href="https://dev-portfolio-ten-azure.vercel.app"><img src="./cards/hero-759f0b0f.svg" width="100%" alt="Dev Garg. Software Engineer at Zime. I work on sign-in, infrastructure and AI features at Zime, a sales intelligence platform, and build small full-stack apps on the side." /></a><br>
-<img src="./cards/skyline-01550d1d.svg" width="100%" alt="Contributions over the last year drawn as a city: one building per week, one lit window per day with contributions" /><br>
-<img src="./cards/stats-ec0a4114.svg" width="100%" alt="4,285 contributions in the last year. Current streak 3 days, longest 20." /><br>
+<img src="./cards/skyline-4d343a85.svg" width="100%" alt="Contributions over the last year drawn as a city: one building per week, one lit window per day with contributions" /><br>
+<img src="./cards/stats-2498addc.svg" width="100%" alt="4,288 contributions in the last year. Current streak 4 days, longest 20." /><br>
 <a href="https://zime.ai"><img src="./cards/now-7d1e7a5f.svg" width="50%" alt="Work: Sign-in and SSO, our Kubernetes setup on AWS, and Ask Zime, which answers questions about sales calls. Ship: Apps I&#x27;ve put live: Kharcha for splitting expenses, a real-time project board, and my portfolio." /></a><a href="https://github.com/Dev771?tab=repositories"><img src="./cards/stack-f3ea06da.svg" width="50%" alt="Stack. Code in my public repos: TypeScript 55%, JavaScript 40%, Java 6%. Tools: NestJS, Next.js, React Native, Spring Boot, Postgres, Redis, AWS, Kubernetes." /></a><br>
 <img src="./cards/timeline-69daaf9b.svg" width="100%" alt="My timeline. 2018–2021: BCA, Bharati Vidyapeeth. 2021–2023: MCA, Bharati Vidyapeeth. Mar 2023–Oct 2024: Nagarro, Java full-stack developer. Oct 2024–Mar 2025: Goodspace AI, Full-stack developer. Since Mar 2025: Zime, Software engineer." /><br>
 <img src="./cards/title-built-7f8eaddb.svg" width="100%" alt="Things I've built" /><br>
